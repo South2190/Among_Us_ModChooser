@@ -1,13 +1,13 @@
 @echo off
 
-set ThisVer=BETA1.1.221226
+set ThisVer=BETA1.1.221220
 
 title Among Us ModChooser version:%ThisVer%
 
 echo.
 echo                           Among Us ModChooser
 echo.
-echo                     version:BETA1.1.221226 by SHELL
+echo                     version:BETA1.1.221220 by SHELL
 echo.
 echo ========================================================================
 
