@@ -1,13 +1,13 @@
 @echo off
 
-set ThisVer=ALPHA1.0.221226
+set ThisVer=BETA1.1.221226
 
 title Among Us ModChooser version:%ThisVer%
 
 echo.
 echo                           Among Us ModChooser
 echo.
-echo                     version:ALPHA1.0.221226 by SHELL
+echo                     version:BETA1.1.221226 by SHELL
 echo.
 echo ========================================================================
 
@@ -15,31 +15,46 @@ cd /d "%PROGRAMFILES(X86)%\Steam\steamapps\common"
 
 rem HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam
 
-if not exist "Among Us" (
- echo Among Usフォルダが見つかりません。終了します。
- echo.
- pause
- exit /b -2
-)
-
-if exist "Among Us\ModChooserInfo.txt" (
- if not exist "Among Us__Vanilla" (
-  echo ファイル不整合エラーのため実行を継続できません。終了します。
+:LOAD_CURRENTMOD
+ if not exist "Among Us" (
+  echo Among Usフォルダが見つかりません。終了します。
   echo.
   pause
-  exit /b -1
+  exit /b -2
  )
- set ISMODAPPLYING=1
- goto GET_MODNAME
-) else (
- set ISMODAPPLYING=0
- echo 現在バニラの状態です
- goto MAIN
-)
+
+ if exist "Among Us\ModChooserInfo.txt" (
+  if not exist "Among Us__Vanilla" (
+   echo ファイル不整合エラーのため実行を継続できません。終了します。
+   echo.
+   pause
+   exit /b -1
+  )
+  set ISMODAPPLYING=1
+  goto GET_MODNAME
+ ) else (
+  set ISMODAPPLYING=0
+  echo 現在バニラの状態です
+  goto MAIN
+ )
 
 :GET_MODNAME
  set /p CULLENT_MOD=<"Among Us\ModChooserInfo.txt"
  echo 現在設定されているMod...%CULLENT_MOD%
+ goto MAIN
+
+:LOAD_MODLIST
+ setlocal EnableDelayedExpansion
+
+ set CNT=1
+ for /d %%F in ("Among Us_*") do (
+  if exist "%%F\ModChooserInfo.txt" (
+   set /p LIST_MOD[!CNT!]=<"%%F\ModChooserInfo.txt"
+   set /a CNT+=1
+  )
+ )
+
+ goto %CALLBACK%
 
 :MAIN
  title メインメニュー - Among Us ModChooser version:%ThisVer%
@@ -50,7 +65,7 @@ if exist "Among Us\ModChooserInfo.txt" (
  echo.
  echo 1.起動するModの選択
  echo 2.Modの追加
- rem echo 3.Modの削除
+ echo 3.Modの削除
  echo.
  echo 0.終了
  echo.
@@ -59,9 +74,15 @@ if exist "Among Us\ModChooserInfo.txt" (
 
  set /p Val=入力^>
 
- if '%Val%'=='1' goto CHOOSE_MODS
+ if '%Val%'=='1' (
+  set CALLBACK=CHOOSE_MODS
+  goto LOAD_MODLIST
+ )
  if '%Val%'=='2' goto ADD_MOD
- rem if '%Val%'=='3' goto DEL_MOD
+ if '%Val%'=='3' (
+  set CALLBACK=DEL_MOD
+  goto LOAD_MODLIST
+ )
  if '%Val%'=='0' goto :eof
 
  echo 上記の範囲で入力してください
@@ -72,16 +93,6 @@ rem ============================== CHOOSE_MODS FIELD ===========================
 
 :CHOOSE_MODS
  title 起動するModの選択 - Among Us ModChooser version:%ThisVer%
-
- setlocal EnableDelayedExpansion
-
- set CNT=1
- for /d %%F in ("Among Us_*") do (
-  if exist "%%F\ModChooserInfo.txt" (
-   set /p LIST_MOD[!CNT!]=<"%%F\ModChooserInfo.txt"
-   set /a CNT+=1
-  )
- )
 
  if '!CNT!'=='1' if '%ISMODAPPLYING%'=='0' (
   echo Modが見つかりませんでした。メインメニューの「Modの追加」から起動したいModを追加してください。
@@ -121,18 +132,17 @@ rem ============================== CHOOSE_MODS FIELD ===========================
 
  echo 上記の範囲で入力してください
  endlocal
- goto CHOOSE_MODS
+ goto LOAD_MODLIST
 
 :CHANGE_MODS
  if '%ISMODAPPLYING%'=='0' ren "Among Us" "Among Us__Vanilla"
  if '%ISMODAPPLYING%'=='1' ren "Among Us" "Among Us_%CULLENT_MOD%"
  ren "Among Us_!LIST_MOD[%Val%]!" "Among Us"
 
- echo Mod"!LIST_MOD[%Val%]!"に設定しました
+ echo Modを設定しました
  echo.
  endlocal
- pause
- goto :eof
+ goto LOAD_CURRENTMOD
 
 :RESTORE_VANILLA
  ren "Among Us" "Among Us_%CULLENT_MOD%"
@@ -140,8 +150,8 @@ rem ============================== CHOOSE_MODS FIELD ===========================
  echo バニラに戻しました
  echo.
  endlocal
- pause
- goto :eof
+ goto GET_MODNAME
+
 rem ============================== ADD_MOD FIELD ==============================
 
 :ADD_MOD
@@ -232,8 +242,18 @@ rem ============================== ADD_MOD FIELD ==============================
  set /p<nul="%ADD_NAME%">"Among Us_%ADD_NAME%\ModChooserInfo.txt"
 
  echo.
- echo ========================================================================
  echo.
  echo Mod"%ADD_NAME%"を追加しました
 
  goto MAIN
+
+rem ============================== DEL_MOD FIELD ==============================
+
+:DEL_MOD
+ title Modの削除 - Among Us ModChooser version:%ThisVer%
+
+ if '!CNT!'=='1' if '%ISMODAPPLYING%'=='0' (
+  echo 削除できるModが見つかりませんでした。
+  endlocal
+  goto MAIN
+ )
