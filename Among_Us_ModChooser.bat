@@ -7,7 +7,7 @@ title Among Us ModChooser version:%ThisVer%
 echo.
 echo                           Among Us ModChooser
 echo.
-echo                     version:BETA1.1.221220 by SHELL
+echo                     version:BETA1.0.221220 by SHELL
 echo.
 echo ========================================================================
 
@@ -35,13 +35,13 @@ rem HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam
  ) else (
   set ISMODAPPLYING=0
   echo 現在バニラの状態です
-  goto MAIN
+  goto LOAD_MODLIST
  )
 
 :GET_MODNAME
  set /p CULLENT_MOD=<"Among Us\ModChooserInfo.txt"
  echo 現在設定されているMod...%CULLENT_MOD%
- goto MAIN
+ goto LOAD_MODLIST
 
 :LOAD_MODLIST
  setlocal EnableDelayedExpansion
@@ -54,7 +54,7 @@ rem HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam
   )
  )
 
- goto %CALLBACK%
+ goto MAIN
 
 :MAIN
  title メインメニュー - Among Us ModChooser version:%ThisVer%
@@ -75,13 +75,11 @@ rem HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam
  set /p Val=入力^>
 
  if '%Val%'=='1' (
-  set CALLBACK=CHOOSE_MODS
-  goto LOAD_MODLIST
+  goto CHOOSE_MODS
  )
  if '%Val%'=='2' goto ADD_MOD
  if '%Val%'=='3' (
-  set CALLBACK=DEL_MOD
-  goto LOAD_MODLIST
+  goto DEL_MOD
  )
  if '%Val%'=='0' goto :eof
 
@@ -96,7 +94,6 @@ rem ============================== CHOOSE_MODS FIELD ===========================
 
  if '!CNT!'=='1' if '%ISMODAPPLYING%'=='0' (
   echo Modが見つかりませんでした。メインメニューの「Modの追加」から起動したいModを追加してください。
-  endlocal
   goto MAIN
  )
 
@@ -120,7 +117,6 @@ rem ============================== CHOOSE_MODS FIELD ===========================
  set /p Val=入力^>
 
  if '%Val%'=='0' (
-  endlocal
   goto MAIN
  )
  if '%Val%' geq '1' if '%Val%' leq '!CNT!' (
@@ -131,7 +127,6 @@ rem ============================== CHOOSE_MODS FIELD ===========================
  )
 
  echo 上記の範囲で入力してください
- endlocal
  goto LOAD_MODLIST
 
 :CHANGE_MODS
@@ -150,7 +145,7 @@ rem ============================== CHOOSE_MODS FIELD ===========================
  echo バニラに戻しました
  echo.
  endlocal
- goto GET_MODNAME
+ goto LOAD_CURRENTMOD
 
 rem ============================== ADD_MOD FIELD ==============================
 
@@ -189,21 +184,17 @@ rem ============================== ADD_MOD FIELD ==============================
 
  if "%ADD_NAME%"=="" goto MAIN
 
- setlocal EnableDelayedExpansion
-
- set CNT=1
- for /d %%F in ("Among Us_*") do (
-  if exist "%%F\ModChooserInfo.txt" (
-   set /p CHECK_VALUE=<"%%F\ModChooserInfo.txt"
-   if "%ADD_NAME%"=="!CHECK_VALUE!" (
-    echo そのModは既に存在します
-    endlocal
-    goto ADD_MOD_2
-   )
+ set /a CNT-=1
+ for /l %%I in (1, 1, !CNT!) do (
+  echo %%I.!LIST_MOD[%%I]!
+  if "%ADD_NAME%"=="!LIST_MOD[%%I]!" (
+   echo そのModは既に存在します
+   goto ADD_MOD_2
   )
  )
 
- endlocal
+ rem このコードでは現在設定されているModを検出できない
+
  goto ADD_MOD_3
 
 :ADD_MOD_3
@@ -245,7 +236,8 @@ rem ============================== ADD_MOD FIELD ==============================
  echo.
  echo Mod"%ADD_NAME%"を追加しました
 
- goto MAIN
+ endlocal
+ goto LOAD_MODLIST
 
 rem ============================== DEL_MOD FIELD ==============================
 
@@ -254,6 +246,21 @@ rem ============================== DEL_MOD FIELD ==============================
 
  if '!CNT!'=='1' if '%ISMODAPPLYING%'=='0' (
   echo 削除できるModが見つかりませんでした。
-  endlocal
   goto MAIN
  )
+
+ set /a CNT-=1
+ echo.
+ echo.
+ echo 削除したいModを選択してください
+ echo.
+ for /l %%I in (1, 1, !CNT!) do (echo %%I.!LIST_MOD[%%I]!)
+ echo.
+ echo 0.戻る
+ echo. 
+
+ set Val=
+
+ set /p Val=入力^>
+
+ goto MAIN
