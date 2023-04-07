@@ -1,13 +1,14 @@
 @echo off
 
-set ThisVer=BETA1.1.221220
+set ThisVer=BETA1.0.230408
 
 title Among Us ModChooser version:%ThisVer%
 
+echo ========================================================================
 echo.
 echo                           Among Us ModChooser
 echo.
-echo                     version:BETA1.0.221220 by SHELL
+echo                     version:%ThisVer% by SHELL
 echo.
 echo ========================================================================
 
@@ -74,13 +75,9 @@ rem HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam
 
  set /p Val=入力^>
 
- if '%Val%'=='1' (
-  goto CHOOSE_MODS
- )
+ if '%Val%'=='1' goto CHOOSE_MODS
  if '%Val%'=='2' goto ADD_MOD
- if '%Val%'=='3' (
-  goto DEL_MOD
- )
+ if '%Val%'=='3' goto DEL_MOD
  if '%Val%'=='0' goto :eof
 
  echo 上記の範囲で入力してください
@@ -117,6 +114,7 @@ rem ============================== CHOOSE_MODS FIELD ===========================
  set /p Val=入力^>
 
  if '%Val%'=='0' (
+  set /a CNT+=1
   goto MAIN
  )
  if '%Val%' geq '1' if '%Val%' leq '!CNT!' (
@@ -127,7 +125,8 @@ rem ============================== CHOOSE_MODS FIELD ===========================
  )
 
  echo 上記の範囲で入力してください
- goto LOAD_MODLIST
+ set /a CNT+=1
+ goto CHOOSE_MODS
 
 :CHANGE_MODS
  if '%ISMODAPPLYING%'=='0' ren "Among Us" "Among Us__Vanilla"
@@ -186,9 +185,9 @@ rem ============================== ADD_MOD FIELD ==============================
 
  set /a CNT-=1
  for /l %%I in (1, 1, !CNT!) do (
-  echo %%I.!LIST_MOD[%%I]!
   if "%ADD_NAME%"=="!LIST_MOD[%%I]!" (
-   echo そのModは既に存在します
+   echo その名前のModは既に存在します
+   set /a CNT+=1
    goto ADD_MOD_2
   )
  )
@@ -214,7 +213,11 @@ rem ============================== ADD_MOD FIELD ==============================
  set /p Val=入力^>
 
  if '%Val%'=='1' goto ADD_MOD_RUN
- if '%Val%'=='0' goto MAIN
+ if '%Val%'=='0' (
+  set /a CNT+=1
+  goto MAIN
+ )
+
 
  echo 上記の範囲で入力してください
  echo.
@@ -234,7 +237,7 @@ rem ============================== ADD_MOD FIELD ==============================
 
  echo.
  echo.
- echo Mod"%ADD_NAME%"を追加しました
+ echo Modを追加しました
 
  endlocal
  goto LOAD_MODLIST
@@ -247,12 +250,19 @@ rem ============================== DEL_MOD FIELD ==============================
  if '!CNT!'=='1' if '%ISMODAPPLYING%'=='0' (
   echo 削除できるModが見つかりませんでした。
   goto MAIN
+ ) else if '%ISMODAPPLYING%'=='1' (
+  echo 削除できるModが見つかりませんでした。
+  echo ※現在設定されているModを削除するには、"メインメニュー"の"起動するModの選択"からバニラに戻す必要があります。
+  goto MAIN
  )
 
  set /a CNT-=1
  echo.
  echo.
  echo 削除したいModを選択してください
+ if '%ISMODAPPLYING%'=='1' (
+  echo ※現在設定されているModを削除するには、「メインメニュー」の「起動するModの選択」からバニラに戻す必要があります。
+ )
  echo.
  for /l %%I in (1, 1, !CNT!) do (echo %%I.!LIST_MOD[%%I]!)
  echo.
@@ -263,4 +273,47 @@ rem ============================== DEL_MOD FIELD ==============================
 
  set /p Val=入力^>
 
- goto MAIN
+ if '%Val%'=='0' (
+  set /a CNT+=1
+  goto MAIN
+ )
+ if '%Val%' geq '1' if '%Val%' leq '!CNT!' (
+  set SelectNum=%Val%
+  goto DEL_MOD_CONFIRM
+ )
+
+ echo 上記の範囲で入力してください
+
+ set /a CNT+=1
+ goto DEL_MOD
+
+:DEL_MOD_CONFIRM
+ echo.
+ echo.
+ echo Mod"!LIST_MOD[%SelectNum%]!"を削除します
+ echo ※この操作は取り消せません
+ echo.
+ echo 1.削除
+ echo 0.キャンセル
+ echo.
+
+ set Val=
+
+ set /p Val=入力^>
+
+ if '%Val%'=='1' goto DEL_MOD_RUN
+ if '%Val%'=='0' (
+  set /a CNT+=1
+  goto MAIN
+ )
+
+ echo 上記の範囲で入力してください
+
+ goto DEL_MOD_CONFIRM
+
+:DEL_MOD_RUN
+ rd /s /q "Among Us_!LIST_MOD[%SelectNum%]!"
+ echo Modを削除しました
+ echo.
+ endlocal
+ goto LOAD_MODLIST
