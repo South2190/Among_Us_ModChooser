@@ -1,6 +1,6 @@
 @echo off
 
-set ThisVer=BETA1.0.230408
+set ThisVer=1.0.0
 
 title Among Us ModChooser version:%ThisVer%
 
@@ -8,7 +8,7 @@ echo ========================================================================
 echo.
 echo                           Among Us ModChooser
 echo.
-echo                     version:%ThisVer% by SHELL
+echo                         version:%ThisVer% by SHELL
 echo.
 echo ========================================================================
 
@@ -117,12 +117,8 @@ rem ============================== CHOOSE_MODS FIELD ===========================
   set /a CNT+=1
   goto MAIN
  )
- if '%Val%' geq '1' if '%Val%' leq '!CNT!' (
-  goto CHANGE_MODS
- )
- if '%ISMODAPPLYING%'=='1' if '%Val%'=='!CNUM!' (
-  goto RESTORE_VANILLA
- )
+ if defined LIST_MOD[%Val%] goto CHANGE_MODS
+ if '%ISMODAPPLYING%'=='1' if '%Val%'=='!CNUM!' goto RESTORE_VANILLA
 
  echo 上記の範囲で入力してください
  set /a CNT+=1
@@ -161,7 +157,7 @@ rem ============================== ADD_MOD FIELD ==============================
 
  set /p ADD_DIR=パス^>
 
- if "%ADD_DIR%"=="" goto MAIN
+ if not defined ADD_DIR goto MAIN
 
  if not exist "%ADD_DIR%" (
   echo 指定されたフォルダが見つかりません
@@ -181,7 +177,12 @@ rem ============================== ADD_MOD FIELD ==============================
 
  set /p ADD_NAME=名前^>
 
- if "%ADD_NAME%"=="" goto MAIN
+ if not defined ADD_NAME goto MAIN
+
+ if "%ADD_NAME%"=="%CULLENT_MOD%" (
+  echo その名前のModは既に存在します
+  goto ADD_MOD_2
+ )
 
  set /a CNT-=1
  for /l %%I in (1, 1, !CNT!) do (
@@ -277,7 +278,7 @@ rem ============================== DEL_MOD FIELD ==============================
   set /a CNT+=1
   goto MAIN
  )
- if '%Val%' geq '1' if '%Val%' leq '!CNT!' (
+ if defined LIST_MOD[%Val%] (
   set SelectNum=%Val%
   goto DEL_MOD_CONFIRM
  )
